@@ -1,3 +1,4 @@
+# sysinfo.h
 ## ユーティリティ
 | 識別子 | 種類 | 戻り値や定義されている値 | 説明 |
 | :--- | :--- | :--- | :--- |
@@ -73,3 +74,75 @@ int main(void) {
     return 0;
 }
 ```
+
+# resource.h
+## 概要
+- プロセスが消費するシステムリソースの制限の取得や設定、リソースの使用状況の取得などを行うPOSIX標準ヘッダー
+```c
+struct rlimit {
+    rlim_t rlim_cur;  // ソフトリミット（現在の制限値。プロセスが自身で変更可能）
+    rlim_t rlim_max;  // ハードリミット（ソフトリミットの最大値。特権プロセスのみ増加可能）
+};
+```
+
+```c
+struct rusage {
+    struct timeval ru_utime; /* 使用されたユーザーCPU時間 */
+    struct timeval ru_stime; /* 使用されたシステムCPU時間 */
+    long   ru_maxrss;        /* 最大常駐セットサイズ (Maximum Resident Set Size) */
+    long   ru_ixrss;         /* 共有メモリの合計サイズ (Integral shared memory size) */
+    long   ru_idrss;         /* 非共有データの合計サイズ */
+    long   ru_isrss;         /* 非共有スタックの合計サイズ */
+    long   ru_minflt;        /* ページリクレーム (マイナーページフォルト) */
+    long   ru_majflt;        /* ページフォルト (メジャーページフォルト。I/Oを伴う) */
+    long   ru_nswap;         /* スワップ回数 */
+    long   ru_inblock;       /* ブロック入力操作の回数 */
+    long   ru_oublock;       /* ブロック出力操作の回数 */
+    long   ru_msgsnd;        /* 送信されたIPCメッセージ数 */
+    long   ru_msgrcv;        /* 受信されたIPCメッセージ数 */
+    long   ru_nsignals;      /* 受信されたシグナル数 */
+    long   ru_nvcsw;         /* 意図的なコンテキストスイッチ (Voluntary context switches) */
+    long   ru_nivcsw;        /* 強制的なコンテキストスイッチ (Involuntary context switches) */
+};
+```
+
+## リソース制限
+```c
+int getrlimit(int resource, struct rlimit *rlim);
+int setrlimit(int resource, const struct rlimit *rlim);
+```
+| マクロ名 | 説明 |
+| :--- | :--- |
+| `RLIMIT_AS` | プロセスの仮想メモリの最大サイズ（バイト） |
+| `RLIMIT_CORE` | 生成されるコアダンプファイルの最大サイズ（バイト）。0を指定すると生成されない |
+| `RLIMIT_CPU` | 消費できるCPU時間の最大値（秒）。超過すると `SIGXCPU` が送られる |
+| `RLIMIT_DATA` | プロセスのデータセグメント（ヒープなど）の最大サイズ（バイト） |
+| `RLIMIT_FSIZE` | プロセスが作成できるファイルの最大サイズ（バイト） |
+| `RLIMIT_MEMLOCK` | RAM上にロック（`mlock`など）できるメモリの最大サイズ（バイト） |
+| `RLIMIT_MSGQUEUE` | POSIXメッセージキューに割り当て可能な最大バイト数（Linux固有） |
+| `RLIMIT_NICE` | `setpriority` 等で設定できるnice値の最大上限値（Linux固有） |
+| `RLIMIT_NOFILE` | プロセスがオープンできるファイルディスクリプタの最大数 |
+| `RLIMIT_NPROC` | ユーザーが作成できるプロセスの最大数 |
+| `RLIMIT_RSS` | 常駐セットサイズ（RAM上に保持されるページ数）の最大値（現在多くのOSで無効化） |
+| `RLIMIT_STACK` | プロセスのスタックの最大サイズ（バイト） |
+
+## リソース使用状況
+```c
+int getrusage(int who, struct rusage *usage);
+```
+| マクロ名 | 対象 |
+| :--- | :--- |
+| `RUSAGE_SELF` | 呼び出し元プロセス自身のリソース使用量、およびそのスレッドの合計。 |
+| `RUSAGE_CHILDREN` | 終了してwaitされたすべての子プロセスのリソース使用量の合計。 |
+| `RUSAGE_THREAD` | 呼び出し元スレッドのリソース使用量（Linux固有 `_GNU_SOURCE` 等が必要）。 |
+
+## スケジューリング優先度
+```c
+int getpriority(int which, id_t who);
+int setpriority(int which, id_t who, int prio);
+```
+| マクロ名 | `who` 引数の意味 | 対象 |
+| :--- | :--- | :--- |
+| `PRIO_PROCESS` | プロセスID | 指定されたPIDのプロセス |
+| `PRIO_PGRP` | プロセスグループID | 指定されたPGIDの全プロセス |
+| `PRIO_USER` | 実ユーザーID | 指定されたUIDが所有する全プロセス |
