@@ -153,10 +153,11 @@ const MyComponent = () => {
 - 副作用: レンダリングに関係ない事
   - Reactを通さずにDOM操作を実行, 外部システムに影響を与えるetc
 - useEffect: 副作用をレンダリングフェーズから切り離し、外部システムと同期するためのAPI
+- **副作用はレンダリングの後に動作するため、副作用内でstateを変更すると無限ループになる可能性がある**
 
 ### 関数
 #### useEffect / useLayoutEffect
-- `(cb, [var])`
+- `(cb, [dep])`
 - 非同期でコールバック関数を実行
   - ブラウザが画面を描写した後/前
   - 第二引数を前回の呼び出しと今回で比較して、変わっていたら
@@ -165,13 +166,15 @@ const MyComponent = () => {
   - 次回の`useEffect`のコールバックが実行される直前
 
 #### useRef
-- 
-###### 詳細
+- `current`プロパティに`useRef`の引数を持つオブジェクトを生成
+- 要素に`ref`属性をつけると、`current`に現在の状態のelementが入る
+- `ref`要素が再レンダリンされると同期して`current`も更新される
+- `ref`要素が再レンダリングされない限り、`current`はコンポーネントが再レンダリングされようと更新されない
+- 用途は二つ
+  - DOMに直接アクセスし、描写が変わらない操作(focus()やplay())を行う
+  - `ref`要素は使わずに、値が変わっても再レンダリングしたくない値を管理する
+###### 詳細(refプロパティ) ※ここは詳細に調べていないため、誤情報の可能性もある
 - JSXのrefプロパティに`useRef`で作成したオブジェクトを渡す
-- DOMノードの参照を保持する
-- ref.curretも呼び出せる
-
-### refプロパティ
 - `__jsx()`のプロパティ
 - コミットフェーズ終了後、生成したDOMノードが`ref.current`に代入される
 
@@ -182,11 +185,10 @@ const MyComponent = () => {
 <!-- ## 依存配列（Dependency Array）の評価基準 -->
 <!-- ## forwardRef / useImperativeHandle -->
 
-# React Router
+<!-- # React Router -->
+<!-- nextに関係なさそうだからスキップ -->
 
-
-
-
+<!-- 
 # 評価のキャッシュと最適化
 ## React.memo（コンポーネントのメモ化）
 ## useMemo（値のメモ化）
@@ -195,7 +197,7 @@ const MyComponent = () => {
 # 特殊なコンポーネントとAPI
 ## Fragment
 ## Suspense / Error Boundary
-## Portal
+## Portal -->
 
 # 基本仕様や設定
 ## files
