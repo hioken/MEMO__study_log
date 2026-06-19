@@ -52,17 +52,46 @@
 ## 全体像
 ```
 my-app/
-├── middleware.ts(proxy.ts)        # [Edge] L7リクエストインターセプト
-├── app/                 # ルーティングのルートディレクトリ
-│   ├── layout.tsx       # [Node.js -> V8] 状態を保持する共通UIシェル
-│   ├── page.tsx         # [Node.js -> V8] '/' のUIエントリーポイント
-│   ├── api/
-│   │   └── route.ts     # [Node.js] '/api' の生HTTPエンドポイント
-│   └── users/
-│       ├── [id]/
-│       │   └── page.tsx # [Node.js -> V8] '/users/:id' のUIエントリーポイント
-│       └── layout.tsx   # [Node.js -> V8] users配下専用のUIシェル
-└── next.config.js       # [Node.js] サーバー起動時の全体設定
+├── public/                 # 🌍 [Static] 静的アセット（ビルドを介さないファイル）
+│   ├── images/             # 画像ファイル（/images/... でアクセス可能）
+│   └── favicon.ico         # サイトアイコン
+│
+├── middleware.ts           # 🛡️ [Edge] L7リクエストインターセプト（認証、リダイレクト、i18nなど）
+│
+├── app/                    # 🚀 ルーティングとアプリケーションのコア
+│   ├── layout.tsx          # [Server] 全ページ共通のルートレイアウト（<html>, <body>を定義）
+│   ├── page.tsx            # [Server] '/' のエントリーポイント
+│   ├── globals.css         # アプリ全体のグローバルスタイル（Tailwindなど）
+│   │
+│   ├── lib/                # 🛠️ ビジネスロジック・データ層・ユーティリティ
+│   │   ├── definitions.ts  # [Type] アプリケーション全体の型定義（TypeScript）
+│   │   ├── data.ts         # [Server] DBクエリや外部APIからのデータ取得関数（Fetch）
+│   │   ├── actions.ts      # [Server] Server Actions（フォーム送信やDB更新のミューテーション）
+│   │   └── utils.ts        # 日付フォーマットやクラス名結合などの純粋な関数
+│   │
+│   ├── ui/                 # 🎨 汎用的なUIコンポーネント（ルーティングに依存しない要素）
+│   │   ├── components/     # ボタン、カード、フォームなどの部品
+│   │   │   ├── button.tsx  # [Client] クリックイベントなどを持つUI（先頭に 'use client'）
+│   │   │   └── card.tsx    # [Server] 状態を持たない表示専用のUI
+│   │   ├── layout/         # ヘッダー、フッター、ナビゲーションバーなど
+│   │   └── skeletons.tsx   # [Server] 読み込み中のプレースホルダーUI（Suspenseと併用）
+│   │
+│   ├── api/                # 🔌 外部向けAPIルート（Webhookや別アプリからの呼び出し用）
+│   │   └── route.ts        # [Node.js] '/api' の生HTTPエンドポイント
+│   │
+│   └── users/              # 👥 '/users' 配下のルーティング
+│       ├── layout.tsx      # [Server] users配下専用の共通UI（専用のサイドバーなど）
+│       ├── page.tsx        # [Server] '/users' の一覧ページ
+│       ├── loading.tsx     # [Server] ページ読み込み時に表示されるUI（自動でSuspenseラップ）
+│       ├── error.tsx       # [Client] エラー発生時のフォールバックUI（必ず 'use client'）
+│       │
+│       └── [id]/           # 動的ルーティング
+│           ├── page.tsx    # [Server] '/users/:id' の詳細ページ
+│           └── not-found.tsx # [Server] ユーザーが見つからなかった時の404画面
+│
+├── .env                    # 🔐 環境変数（DB接続文字列、APIキーなど ※Gitには含めない）
+├── next.config.js          # ⚙️ [Node.js] サーバー起動時の全体設定（画像ドメイン設定など）
+└── tailwind.config.ts      # 🖌️ Tailwind CSSの設定ファイル
 ```
 
 ## UI描写
@@ -121,6 +150,7 @@ my-app/
 
 
 # 後で解決
+## 1
 (RPCの仕組みについて)
 Q.
 この仕組みだと、特定の現在のUIの条件に応じて返すDOMを変更したくて、バグを絶対起こしたくない場合
@@ -148,3 +178,6 @@ RPCを呼び出してからRSC Payloadが返ってくるまでの間には、ネ
 RPCの実行をトランザクションとして扱い、実行中かどうかのフラグ（`isPending`）を取得します。このフラグが `true` の間、ボタンの `disabled` 属性を有効にしたり、画面全体にオーバーレイを被せて操作を物理的にブロックします。これが、ご提案いただいた「絶対にバグを起こさない」ための最も確実な実装です。
 * **`useOptimistic` (楽観的更新 - 補足):**
 逆にUIをブロックしたくない（UXを優先したい）場合は、RPCの完了を待たずにV8のメモリだけを先に「成功した状態」に書き換え、もしRPCからエラーや異なる状態のRSC Payloadが返ってきた場合は、React側で自動的にV8のメモリをロールバックさせるというアプローチも用意されています。
+
+## 2
+ormの勉強(prisma)
