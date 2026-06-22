@@ -10,7 +10,6 @@
 | `get_avphys_pages()` | 関数 | 利用可能な物理メモリのページ数（`long`） | 現在システムで使われていない、即座に利用できる物理メモリの容量をページ個数単位で返す。 |
 | `SI_LOAD_SHIFT` | 定数 | 通常は `16` | `struct sysinfo` の `loads`（整数値）を実際のロードアベレージ（実数値）に変換する際のビットシフト量。 |
 
-# 説明
 ## struct sysinfo
 | メンバ | 値(型) | 説明 |
 | :--- | :--- | :--- |
@@ -146,3 +145,27 @@ int setpriority(int which, id_t who, int prio);
 | `PRIO_PROCESS` | プロセスID | 指定されたPIDのプロセス |
 | `PRIO_PGRP` | プロセスグループID | 指定されたPGIDの全プロセス |
 | `PRIO_USER` | 実ユーザーID | 指定されたUIDが所有する全プロセス |
+
+# pthread.h
+## 前提知識
+- POSIXスレッド: C言語やC++でマルチスレッドプログラムを作成するための、UNIX系OSの標準的なAPI
+- 排他制御: 複数スレッドが同じメモリの書き替えを行わないようにする仕組み
+## 関数
+| 関数名 | 引数 | 引数の説明 | 関数の説明 |
+| :--- | :--- | :--- | :--- |
+| `pthread_create` | `t`, `a`, `f`, `arg` | `t`:ID格納先, `a`:属性(基本NULL), `f`:実行関数, `arg`:引数 | 新スレッド作成と実行 |
+| `pthread_join` | `t`, `ret` | `t`:対象ID, `ret`:戻り値格納先 | 終了待機と資源解放 |
+| `pthread_detach` | `t` | `t`:対象ID | 終了時に自動で資源解放 |
+| `pthread_exit` | `ret` | `ret`:戻り値 | 自スレッドを明示的に終了 |
+| `pthread_self` | なし | なし | 自スレッドIDを取得 |
+| `pthread_equal` | `t1`, `t2` | `t1`, `t2`:比較するID | 2つのIDが同一か比較 |
+| `pthread_mutex_init` | `m`, `a` | `m`:ミューテックス, `a`:属性(基本NULL) | 排他制御の初期化 |
+| `pthread_mutex_destroy` | `m` | `m`:ミューテックス | 排他制御の破棄 |
+| `pthread_mutex_lock` | `m` | `m`:ミューテックス | ロック獲得(待機あり) |
+| `pthread_mutex_trylock` | `m` | `m`:ミューテックス | ロック試行(待機なし) |
+| `pthread_mutex_unlock` | `m` | `m`:ミューテックス | ロック解除 |
+| `pthread_cond_init` | `c`, `a` | `c`:条件変数, `a`:属性(基本NULL) | 条件変数の初期化 |
+| `pthread_cond_destroy` | `c` | `c`:条件変数 | 条件変数の破棄 |
+| `pthread_cond_wait` | `c`, `m` | `c`:条件変数, `m`:ミューテックス | シグナル待機(一時ロック解除) |
+| `pthread_cond_signal` | `c` | `c`:条件変数 | 待機スレッド1つを再開 |
+| `pthread_cond_broadcast`| `c` | `c`:条件変数 | 待機中全スレッドを再開 |
