@@ -101,9 +101,6 @@ type ReactNode =
 - コンポーネントにimportする
 - `import変数.class定義`を、要素のclassNameの値に指定する
 
-## ループによる効率的なコンポーネントの呼び出し
-
-
 # Hooks
 ## 概要
 - Hooksシステム: コンポーネント関数の状態やライフサイクルを保持する仕組み
@@ -181,6 +178,25 @@ const MyComponent = () => {
 ## バッチ更新
 - Reactは同じイベントループ内の複数のstate更新をまとめて処理する（バッチ更新）
   - 古いstateを参照したまま連続で更新すると、後の更新が前の更新を上書きして期待通りにならないことがある
+
+
+# 組み込みコンポーネント
+## Suspense & lazy
+### 概要
+- 動的ロードのAPI
+### Suspense
+- 子コンポーネントがレンダリングできていない場合`fallback`を代わりに描写する
+- `fallback`: 待機中に表示する`ReactNode`
+- `children`: 最終的に表示する`ReactNode`
+  - `Promise`の`throw`を含むことが前提
+- 子コンポーネントの`throw Promise`を`catch`して、解決を待つ
+### React.lazy
+- `lazy(return Promiseのcb)`
+- `lazy`自体はReact用の遅延ロード用オブジェクトを返す
+- このオブジェクトが評価された時、`lazy`の引数が実行され、戻り値の`Promise`が`throw`される 
+- `Promise`が解決すると、`.default`を読み込む
+- 読み込んだ関数に、`props`を引数として与える
+
 
 <!-- ## 依存配列（Dependency Array）の評価基準 -->
 <!-- ## forwardRef / useImperativeHandle -->

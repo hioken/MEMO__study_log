@@ -1,23 +1,27 @@
-# file system routing
+# system
+## file system routing
 - `page.tsx`と、一部の他の`layout.tsx`などのファイルだけが公開される
 - `page.tsx`へのパスがそのままurlになる
 
-# layout
+## layout
 - `children`の定義が必須
 - 高い階層の`layout.tsx`の`children`に、一番近い階層の`layout.tsx`が入る、`layout.tsx`がなく、その階層に`page.tsx`があれば代入される
 
-# Link & Navigate
-## viewport & prefetch
+## Link & Navigate
+### viewport & prefetch
 - viewportを監視し、画面内(もしくはホバーされた)`<Link>`を補足する
 - prefetch: 補足した`<Link>`先で使うコンポーネントをあらかじめfetchする
 - `useRef`と`useIntersection`を使用した`IntersectionObserver`APIにより実装されている
-
-## Nav
+### Nav
 1. `e.preventDefault()`によるイベントの掌握
 2. History APIによるURL偽装
 3. Client-side Router Cacheの照合
 4. (RSC Payloadの取得)
 5. Reactによる描写
+
+## rendering
+### 概要
+- RSCで毎回同じクエリが確実に出力されることが推論できるページでは、HTMLごと静的にキャッシュされる
 
 # DB
 ## ORM
@@ -33,8 +37,6 @@
 - `sql<T[]>()`:
   - (str): `Promise`で引数のクエリを実行、結果をオブジェクト化, 型をTにアサーションしたオブジェクトを戻り値として返す
   - (obj): オブジェクトをinsert/updateの内容として展開
-
-
 
 # BuildInComponents
 ## next/Link
@@ -70,3 +72,5 @@
 | **loading** | `'lazy' \| 'eager'` | 読み込みタイミング。通常は自動で `lazy`（遅延）になるため指定不要。 |
 | **unoptimized** | `boolean` | `true` でサイズや形式の自動最適化を完全に無効化。 |
 | **loader** | `Function` | カスタムURLを生成する関数（独自の画像配信用）。 |
+
+## next/dynamic
