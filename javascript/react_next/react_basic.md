@@ -189,11 +189,14 @@ const MyComponent = () => {
 ### 概要
 - 動的ロードのAPI
 ### Suspense
-- 子コンポーネントがレンダリングできていない場合`fallback`を代わりに描写する
+- 全ての子コンポーネントがレンダリングできていない場合`fallback`を代わりに描写する
 - `fallback`: 待機中に表示する`ReactNode`
 - `children`: 最終的に表示する`ReactNode`
   - `Promise`の`throw`を含むことが前提
 - 子コンポーネントの`throw Promise`を`catch`して、解決を待つ
+- ネスト時のルール
+  - 自分から見て上の階層で、一番近い階層のSuspenseが`catch`する
+
 ### React.lazy
 - `lazy(return Promiseのcb)`
 - `lazy`自体はReact用の遅延ロード用オブジェクトを返す

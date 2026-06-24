@@ -1,11 +1,18 @@
 # system
-## file system routing
+## routing/file
+### file system routing
 - `page.tsx`と、一部の他の`layout.tsx`などのファイルだけが公開される
 - `page.tsx`へのパスがそのままurlになる
 
-## layout
+### layout
 - `children`の定義が必須
 - 高い階層の`layout.tsx`の`children`に、一番近い階層の`layout.tsx`が入る、`layout.tsx`がなく、その階層に`page.tsx`があれば代入される
+
+### (routing)
+- `()`を使うとurlに影響を与えることなく、ファイルをグループ化できる
+  - urlに影響を与えない = その上の階層の一部として扱われる
+  - しかし、url以外は別階層として扱われるため、`loading.tsx`の影響範囲の伝搬を止めることが出来る
+  - 一応`layout.tsx`にも同じことができるが、それをするくらいなら`page.tsx`にその内容を書いた方がよい
 
 ## Link & Navigate
 ### viewport & prefetch
@@ -24,14 +31,17 @@
 - RSCで毎回同じクエリが確実に出力されることが推論できるページでは、HTMLごとにbuild時に静的にキャッシュされる
 - これは自動では更新されない
 
-### next/dynamic & loading.tsx
+### next/dynamic & loading.tsx & suspense
 #### dynamic
 - WebAPIsが使いえない関係で、正常に動作しない`React.lazy`等をNode.js側で正常に動作させるための機能
 - `dynamic(cb)`: `lazy(cb)`と同じ使い方ができる
   - ただし、`<Suspense>`で囲わなくていい(自動で囲われた時と同じ挙動をする)
-
 #### loading.tsx
 - そのディレクトリの`page.tsx`を`<Suspense>`で囲み、代わりに当ファイルをロードする
+#### Suspense
+- 基本的には生Reactと同じ
+- RSCエンジンによる拡張により、`throw`ではなく`return Promise`でも動作する
+
 
 # DB
 ## ORM
