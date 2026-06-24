@@ -20,8 +20,18 @@
 5. Reactによる描写
 
 ## rendering
-### 概要
-- RSCで毎回同じクエリが確実に出力されることが推論できるページでは、HTMLごと静的にキャッシュされる
+### 動静
+- RSCで毎回同じクエリが確実に出力されることが推論できるページでは、HTMLごとにbuild時に静的にキャッシュされる
+- これは自動では更新されない
+
+### next/dynamic & loading.tsx
+#### dynamic
+- WebAPIsが使いえない関係で、正常に動作しない`React.lazy`等をNode.js側で正常に動作させるための機能
+- `dynamic(cb)`: `lazy(cb)`と同じ使い方ができる
+  - ただし、`<Suspense>`で囲わなくていい(自動で囲われた時と同じ挙動をする)
+
+#### loading.tsx
+- そのディレクトリの`page.tsx`を`<Suspense>`で囲み、代わりに当ファイルをロードする
 
 # DB
 ## ORM
@@ -72,5 +82,3 @@
 | **loading** | `'lazy' \| 'eager'` | 読み込みタイミング。通常は自動で `lazy`（遅延）になるため指定不要。 |
 | **unoptimized** | `boolean` | `true` でサイズや形式の自動最適化を完全に無効化。 |
 | **loader** | `Function` | カスタムURLを生成する関数（独自の画像配信用）。 |
-
-## next/dynamic

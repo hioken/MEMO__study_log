@@ -1,3 +1,7 @@
+# 用語
+- SSR: Server Side Rendering
+- RSC: React Server Component
+
 # アーキテクチャ
 ## 仮想DOMとReconciliation（差分描画）
 - 状態の変化に合わせてUIを再計算する問題を解決
