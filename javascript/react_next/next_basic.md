@@ -3,11 +3,9 @@
 ### file system routing
 - `page.tsx`と、一部の他の`layout.tsx`などのファイルだけが公開される
 - `page.tsx`へのパスがそのままurlになる
-
 ### layout
 - `children`の定義が必須
 - 高い階層の`layout.tsx`の`children`に、一番近い階層の`layout.tsx`が入る、`layout.tsx`がなく、その階層に`page.tsx`があれば代入される
-
 ### (routing)
 - `()`を使うとurlに影響を与えることなく、ファイルをグループ化できる
   - urlに影響を与えない = その上の階層の一部として扱われる
@@ -31,17 +29,84 @@
 - RSCで毎回同じクエリが確実に出力されることが推論できるページでは、HTMLごとにbuild時に静的にキャッシュされる
 - これは自動では更新されない
 
-### next/dynamic & loading.tsx & suspense
-#### dynamic
+## URL
+### searchParams
+- `page.tsx`の`props`にのみ、Next.jsのルーターから自動的に引数として渡される
+- `Promise`(next15~)
+- デフォルトの型: `{ [key: string]: string | string[] | undefined }`
+```tsx
+// /shop?category=shoes&size=27&size=28
+{
+  category: "shoes",
+  size: ["27", "28"],
+}
+```
+### DynamicRoute
+- Path Parameterの実装ロジック
+
+## next/dynamic & loading.tsx & suspense
+### dynamic
 - WebAPIsが使いえない関係で、正常に動作しない`React.lazy`等をNode.js側で正常に動作させるための機能
 - `dynamic(cb)`: `lazy(cb)`と同じ使い方ができる
   - ただし、`<Suspense>`で囲わなくていい(自動で囲われた時と同じ挙動をする)
-#### loading.tsx
+### loading.tsx
 - そのディレクトリの`page.tsx`を`<Suspense>`で囲み、代わりに当ファイルをロードする
-#### Suspense
+### Suspense
 - 基本的には生Reactと同じ
 - RSCエンジンによる拡張により、`throw`ではなく`return Promise`でも動作する
 
+## ServerActions
+### 概要
+- HTTP通信を、関数の呼び出しインターフェースとしてカプセル化したRPC
+- `'use server'`:
+  - ファイル内でexportされた全ての関数をServerActionsとしてマークする
+  - Client, Serverどちらのコンポーネントからも呼び出せる
+  - どちらからも呼び出されていない場合、コンパイル時点で削除される
+### コンパイル
+1. AST Parsing: `"use server"`ディレクティブの対象ファイル(or関数)をServer Boundaryとしてマーキング
+2. Hashing: 各Server Action関数にユニークなハッシュ文字列を割り当てる(Action ID)
+3. Dead Code Elimination: client向けのjsバンドルから、対象関数の中身の処理を削除
+4. Code Genaration:
+  - Client: Action IDを用いてfetchを実行するだけのClient Stubをバンドルに埋め込む
+  - Server: Action IdをURLパスとして受け付け、POSTエンドポイントのハンドラーとして、Server Stubをルーティングシステムに登録
+### 動作(RPCに当てはめた説明)
+1. Client Stub: Tsの型検査はこの時点のインターフェースに行われる
+2. Marshaling: 引数をRSCの特殊なペイロードフォーマットに変換し、ActionIDをヘッダー情報に付与
+3. Network: fetch APIでリクエストを発行
+4. Unmarshaling: ヘッダー`Next-Action`により、Server Stubが起動
+5. Procedure
+6. Network: 再マーシャリングされた関数の戻り値が返却される(設定によってRSC Payloadも)
+### 変換イメージ
+```ts
+"use server"
+export async function myAction(data: string) {
+  const secret = process.env.API_KEY;
+  return db.save(data, secret);
+}
+// ↓↓ //
+
+// クライアントのブラウザに送信される実際のJSファイル
+export function myAction(data) {
+  // コンパイラが自動生成したfetch処理（Client Stub）
+  return fetch('/_next/server-action', {
+    method: 'POST',
+    headers: {
+      'Next-Action': 'a1b2c3d4e5f6', // コンパイラが割り当てたAction ID
+      'Content-Type': 'text/plain'
+    },
+    body: JSON.stringify([data]) // マーシャリングの準備
+  });
+}
+
+// サーバー側でのみ保持・実行されるコード
+const actionRegistry = {
+  // Action IDと実際の関数（Procedure）のマッピング（Server Stubの役割）
+  'a1b2c3d4e5f6': async function original_myAction(data) {
+    const secret = process.env.API_KEY;
+    return db.save(data, secret);
+  }
+};
+```
 
 # DB
 ## ORM
@@ -92,3 +157,29 @@
 | **loading** | `'lazy' \| 'eager'` | 読み込みタイミング。通常は自動で `lazy`（遅延）になるため指定不要。 |
 | **unoptimized** | `boolean` | `true` でサイズや形式の自動最適化を完全に無効化。 |
 | **loader** | `Function` | カスタムURLを生成する関数（独自の画像配信用）。 |
+
+# nextHooks
+## params(next/navigation)
+### url
+- RCC上でしか動かない
+- `usePathName()`
+  - 戻り値: string
+  - useState
+  - 現在のURLのうち、ドメインとクエリパラメータを除外したパス名を厳密な文字列として返すフック
+- `useSearchParams()`
+  - 戻り値: ReadonlyURLSearchParams
+  - useState
+  - クエリパラメータをオブジェクトで取得する
+  - このオブジェクトの`set`, `delete`メソッドはerrorを返すように設定されている(tsの`readonly`も定義されている)
+### useRouter
+- 戻り値: AppRouterInstance(router)
+- useRef
+
+| method | arg | arg詳細 | 説明 |
+| :--- | :--- | :--- | :--- |
+| `push` | `href`, `options?` | `string`, `{ scroll?: boolean }` | 指定URLへ遷移し、履歴スタックを追加する |
+| `replace` | `href`, `options?` | `string`, `{ scroll?: boolean }` | 指定URLへ遷移し、現在の履歴を上書きする |
+| `refresh` | なし | - | 現在のルートのデータを再取得し、画面を更新する |
+| `prefetch` | `href`, `options?` | `string`, `{ kind?: PrefetchKind }` | バックグラウンドで遷移先のルートを事前取得する |
+| `back` | なし | - | ブラウザの履歴を1つ戻る |
+| `forward` | なし | - | ブラウザの履歴を1つ進む |
