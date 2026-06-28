@@ -120,9 +120,30 @@ const actionRegistry = {
 };
 ```
 
-## Error
-### error.tsx
-### notfound.tsx
+## Error Boundary
+- Next.jsのコンポーネントは、jsx領域の更に外を、デフォルトのError Boundaryでラップしている
+- 追加で、`global-error.tsx`, `error.tsx`を読み込むと、対応したErrorBoundaryが対象の範囲を囲う
+#### デフォルトBoundary
+- 開発環境ではerrorオーバーレイ、本番環境では簡素なフォールバックUIを表示させる
+- `next/navigation`の特定の関数から`throw`された例外を補足
+
+| function | throw | catch |
+| :--- | :--- | :--- |
+| `redirect()` | 遷移用の特殊エラー(`NEXT_REDIRECT`) | エラーを捕捉し、指定URLへHTTP 307（一時的）リダイレクトを実行する |
+| `notFound()` | 404用の特殊エラー(`NEXT_NOT_FOUND`) | エラーを捕捉し、直近の `not-found.tsx` をフォールバックUIとして描画する |
+| `permanentRedirect()` | 恒久遷移用の特殊エラー(`NEXT_REDIRECT`) | エラーを捕捉し、指定URLへHTTP 308（恒久的）リダイレクトを実行する |
+| `forbidden()` | 403用の特殊エラー(`NEXT_FORBIDDEN`) | エラーを捕捉し、直近の `forbidden.tsx` をフォールバックUIとして描画する |
+| `unauthorized()` | 401用の特殊エラー(`NEXT_UNAUTHORIZED`) | エラーを捕捉し、直近の `unauthorized.tsx` をフォールバックUIとして描画する |
+
+#### global-error.tsx
+- 対象: `app/layout.tsx`
+- 動作: Reactエンジンの破棄を受け入れてから代替UIを表示するため、`<html>`から記述する必要がある
+#### error.tsx
+- 対象: `page.tsx`
+- 動作: RCCに依存(`"use client"`)
+- 復帰: propsとして`reset()`が提供(補足したerror状態を破棄し、ラップした範囲の再レンダリングを行う)
+
+
 
 # DB
 ## ORM
