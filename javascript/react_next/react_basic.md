@@ -205,22 +205,200 @@ const MyComponent = () => {
 - 読み込んだ関数に、`props`を引数として与える
 
 
-<!-- ## 依存配列（Dependency Array）の評価基準 -->
-<!-- ## forwardRef / useImperativeHandle -->
+# Class Component & Error Boundary
+## Class Component
+### 概要
+- クラスコンポーネントを描写する時、内部的に`new`演算子を使って、インスタンスを生成する
+- コンポーネントが存在する間、同一のオブジェクトとしてメモリ上に保持される
+  - 再レンダリングが起きても、インスタンス自体は破棄されない
+### 関数一覧
+| method | args | 説明 |
+| :--- | :--- | :--- |
+| `constructor` | `props` | インスタンスの生成、`this.state`の初期化、メソッドのバインドを行う。 |
+| `render` | なし | UI（React要素）を生成して返す。副作用を含まない純粋関数として実装する必須メソッド。 |
+| `componentDidMount` | なし | コンポーネントの初回マウント（DOM挿入）直後に1度だけ実行される。API通信やDOM操作を行う。 |
+| `componentDidUpdate` | `prevProps, prevState, snapshot` | 再レンダリング（DOM更新）直後に実行される。propsやstateの変更に依存した副作用処理を行う。 |
+| `componentWillUnmount` | なし | コンポーネントがDOMから削除される直前に実行される。タイマーやイベントリスナーの破棄を行う。 |
+| `shouldComponentUpdate` | `nextProps, nextState` | レンダリングの実行要否を真偽値で返す。デフォルトは`true`。パフォーマンス最適化に用いる。 |
+| `static getDerivedStateFromProps` | `props, state` | マウント時および更新時の`render`直前に実行される。propsの変化に依存してstateを更新するオブジェクトを返す。 |
+| `getSnapshotBeforeUpdate` | `prevProps, prevState` | `render`後、DOMに反映される直前に実行される。スクロール位置などの現在のDOM状態を取得し、`componentDidUpdate`に渡す。 |
+| `static getDerivedStateFromError` | `error` | 子孫コンポーネントでのエラー発生時に実行される。フォールバックUIを表示するための新しいstateを返す。 |
+| `componentDidCatch` | `error, info` | 子孫コンポーネントでのエラー発生時に実行される。エラーログの記録や外部サービスへの送信を行う。 |
+| `setState` | `updater, [callback]` | stateの更新をキューに追加し、再レンダリングをReactに要求する。 |
+| `forceUpdate` | `[callback]` | `shouldComponentUpdate`の評価をスキップし、強制的にコンポーネントを再レンダリングする。 |
 
-<!-- # React Router -->
-<!-- nextに関係なさそうだからスキップ -->
+### プロパティ一覧
+| プロパティ | 種類 | 説明 |
+| :--- | :--- | :--- |
+| `this.props` | インスタンス | 親から渡される読み取り専用のデータオブジェクト。変更不可。 |
+| `this.state` | インスタンス | コンポーネント内部で管理する状態オブジェクト。直接代入による変更は厳禁（初期化時のみ可）。 |
+| `this.context` | インスタンス | 後述の`contextType`で紐づけたContextの現在の値を保持する。Prop Drillingを回避してデータを参照する際に使用。 |
+| `defaultProps` | スタティック | `props`が未指定（`undefined`）の場合に適用されるデフォルト値を定義するオブジェクト。 |
+| `displayName` | スタティック | React DevToolsなどのデバッグUI上で表示されるコンポーネントの識別名を上書きする文字列。 |
+| `contextType` | スタティック | 特定のReact Contextオブジェクトをクラスに紐づけ、`this.context`経由での参照を有効にする。 |
 
-<!-- 
-# 評価のキャッシュと最適化
-## React.memo（コンポーネントのメモ化）
-## useMemo（値のメモ化）
-## useCallback（関数のメモ化）
+### ライフサイクル&state更新イメージ
+```jsx
+import React from 'react';
 
-# 特殊なコンポーネントとAPI
-## Fragment
-## Suspense / Error Boundary
-## Portal -->
+class LifecycleAndStateDemo extends React.Component {
+  constructor(props) {
+    super(props);
+    // ① 複数のプロパティを持つStateを定義
+    this.state = { count: 0, status: 'アクティブ' };
+    console.log('[1] constructor: 初期化');
+  }
+
+  componentDidMount() {
+    console.log('[3] componentDidMount: 初回マウント完了');
+  }
+
+  componentDidUpdate() {
+    // ⑤ 更新後のState全体をログ出力し、statusが消えずに維持されているか観測
+    console.log('[5] componentDidUpdate: 現在のState ->', this.state);
+  }
+
+  componentWillUnmount() {
+    console.log('[6] componentWillUnmount: コンポーネント破棄');
+  }
+
+  // ② Stateの更新メソッド（一部のプロパティのみ上書き）
+  handleIncrement = () => {
+    console.log('--- ボタンクリック ---');
+    // countだけを更新（statusは自動的にシャローマージされて維持される）
+    this.setState({ count: this.state.count + 1 });
+  };
+
+  render() {
+    console.log('[2 / 4] render: 描画実行');
+    return (
+      <button onClick={this.handleIncrement}>
+        {this.state.status} : {this.state.count}
+      </button>
+    );
+  }
+}
+```
+
+### 再レンダリング
+- 再レンダリング条件: stateが全く同じ値に更新されたとしても、再レンダリングされる
+- 再レンダリングの阻止: `React.memo()`でなく`shouldComponentUpdate`および`ReactPureComponent`
+- 強制再レンダリング: `this.forceUpdate()`で`shouldComponentUpdate`を無視して`render()`を実行
+
+## Error Boundary
+### White Screen of Death
+- Reactはレンダリングの途中でエラーが出ると、ツリー全体を破棄する
+- Reactの仕組み的に、コンポーネントの呼び出しはコールチェーンのようにその場で実行しているわけではないので、tryでcatchできない
+### Error Boundary
+- `getDerivedStateFromError()`を使用してエラーハンドリングを行えるクラスコンポーネント
+#### 簡易ロジック説明
+```jsx
+import React from 'react';
+
+class SimpleErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    // ① 平常時か、エラー発生時かを判定するためのState
+    this.state = { hasError: false };
+  }
+
+  // ② Reactエンジンがエラーを検知した時に自動的に呼び出すメソッド
+  static getDerivedStateFromError(error) {
+    // エラーが起きたという事実をStateに反映させる
+    return { hasError: true };
+  }
+
+  render() {
+    // ③ Stateの状態によって「返すUI」を分岐させる
+    if (this.state.hasError) {
+      // エラー発生時は、ツリーを破棄する代わりにこの代替UIを返す
+      return <h1>UIの崩壊を食い止めました。</h1>;
+    }
+
+    // 平常時は、このコンポーネントで「囲んだ中身（子）」をそのまま返す
+    return this.props.children;
+  }
+}
+```
+#### 実装例
+``` tsx
+// ErrorBoundary
+import React, { ReactNode, ErrorInfo } from 'react';
+
+// ① PropsとStateの型定義
+interface Props {
+  children: ReactNode;
+  fallback: ReactNode; // エラー画面を親から注入できるようにする（汎用化）
+}
+
+interface State {
+  hasError: boolean;
+  error?: Error; // 実際のエラー内容も保持しておく
+}
+
+class ErrorBoundary extends React.Component<Props, State> {
+  constructor(props: Props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  // ② UI復帰のための状態更新（純粋関数）
+  static getDerivedStateFromError(error: Error): State {
+    return { hasError: true, error };
+  }
+
+  // ③ 副作用（ログ送信など）のための事後処理
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    // 例：SentryやDatadogなどの監視サービスへエラーログを送信
+    console.error("監視サーバーへ送信:", error);
+    console.error("コンポーネントのスタックトレース:", errorInfo.componentStack);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      // 汎用性を高めるため、固定のタグではなくPropsで受け取ったUIを返す
+      return this.props.fallback;
+    }
+    return this.props.children;
+  }
+}
+
+export default ErrorBoundary;
+
+
+
+// 呼び出し側
+<ErrorBoundary fallback={<div>システムエラーが発生しました。</div>}>
+  <MyComplexComponent />
+</ErrorBoundary>
+
+
+// react fiberの動作イメージ
+function handleError(root, error) {
+  
+  // 1. ツリーを遡って Error Boundary を探す
+  const boundary = findErrorBoundary(root);
+
+  if (boundary) {
+    // 【ルートA】Error Boundary が見つかった場合
+    // 代替UI（フォールバック）を描画して復帰する
+    renderFallbackUI(boundary, error);
+  } else {
+    // 【ルートB】Error Boundary が見つからなかった場合（デフォルト）
+    // 💥 ここで意図的に「White Screen of Death」を引き起こす！
+    unmountEntireTree(root); 
+    throw error; // ブラウザのコンソールに赤いエラーを吐き出す
+  }
+}
+```
+
+
+<!-- ## Error Boundary -->
+<!-- ### 前提/概要 -->
+<!-- - レンダリング処理中にJsエラーが発生した際、Reactは対象コンポーネントの内部状態を破損したとみなす -->
+<!-- - 破損状態でのレンダリング継続を防ぐため、Reactはコンポーネントツリー全体をアンマウントする -->
+<!-- - 上記の全体クラッシュを防ぐのがError Boundary -->
+<!-- - 自信の子コンポーネントツリーで発生したJsエラーを補足し、fallback UIを表示する特別なReactコンポーネント -->
 
 # 基本仕様や設定
 ## files

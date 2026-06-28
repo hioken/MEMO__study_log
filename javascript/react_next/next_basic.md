@@ -1,16 +1,28 @@
 # system
 ## routing/file
-### file system routing
+### file system routing`app/page1/page2`
 - `page.tsx`と、一部の他の`layout.tsx`などのファイルだけが公開される
+#### pageコンポーネント
 - `page.tsx`へのパスがそのままurlになる
-### layout
+- パラメータ関連のpropsが渡される
+
+| props | 値（例） | 型 | 説明 |
+| :--- | :--- | :--- | :--- |
+| `params` | `{ slug: 'hello-world' }` | `Promise<{ [key: string]: string \| string[] \| undefined }>` | 動的ルートセグメントから抽出されたURLパスパラメータ。 |
+| `searchParams` | `{ page: '2', q: 'next' }` | `Promise<{ [key: string]: string \| string[] \| undefined }>` | 現在のURLのクエリ文字列（?以降）のパラメータ。 |
+#### layoutコンポーネント
 - `children`の定義が必須
 - 高い階層の`layout.tsx`の`children`に、一番近い階層の`layout.tsx`が入る、`layout.tsx`がなく、その階層に`page.tsx`があれば代入される
-### (routing)
-- `()`を使うとurlに影響を与えることなく、ファイルをグループ化できる
+### Route Groups`(groups)`
+- FSR(FileSystemRouting)内で`()`を使うとurlに影響を与えることなく、ファイルをグループ化できる
   - urlに影響を与えない = その上の階層の一部として扱われる
   - しかし、url以外は別階層として扱われるため、`loading.tsx`の影響範囲の伝搬を止めることが出来る
   - 一応`layout.tsx`にも同じことができるが、それをするくらいなら`page.tsx`にその内容を書いた方がよい
+### Dynamic Route Segment`[segment]`
+- FSR内で`[]`を使うと、urlにpath parameterを受け取るセグメントを追加できる
+- RSC: pageコンポーネントの`props`の`params`プロパティとしてオブジェクトで受け取る
+- RCC: `useParams()`で受け取る(`戻り値.segment`)
+
 
 ## Link & Navigate
 ### viewport & prefetch
@@ -27,7 +39,7 @@
 ## rendering
 ### 動静
 - RSCで毎回同じクエリが確実に出力されることが推論できるページでは、HTMLごとにbuild時に静的にキャッシュされる
-- これは自動では更新されない
+  - これは自動では更新されない
 
 ## URL
 ### searchParams
@@ -108,6 +120,10 @@ const actionRegistry = {
 };
 ```
 
+## Error
+### error.tsx
+### notfound.tsx
+
 # DB
 ## ORM
 ### Prisma
@@ -183,3 +199,10 @@ const actionRegistry = {
 | `prefetch` | `href`, `options?` | `string`, `{ kind?: PrefetchKind }` | バックグラウンドで遷移先のルートを事前取得する |
 | `back` | なし | - | ブラウザの履歴を1つ戻る |
 | `forward` | なし | - | ブラウザの履歴を1つ進む |
+
+# setting
+## lint
+- `/eslint.confg.mjs`
+- reactの機能が拡張されている
+- コードのエラーではなくルールが統一されているかチェックできる
+- 設定次第で自動修正や、vscodeやCI/CDとの連携などの拡張機能を使える
