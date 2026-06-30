@@ -74,3 +74,22 @@
 * プロセスは `read` コールを用いて、FDと受け皿（バッファ）を指定し、データの取得を依頼する。
 * カーネルは、FDに紐づくファイルオフセット（カーソル位置）から指定バイト数だけデータを読み出し、プロセスのバッファへ**コピー**して渡す。
 * 渡し終えたバイト数分だけ、自動的にファイルオフセット（カーソル）を後方へ進める。
+
+# プロセス間通信
+## 各OSの通信方式
+### iOS(iPhone)
+- Custom URL Scheme または Universal Links
+- iOS(Kernel)がアプリを関数のように呼び出す仕組み
+
+### Android
+- Deep Links / App Links
+- intentという、OS内でアプリ同士のやりとりを可能にするシステムに依存している
+
+### macOS
+- Launch Services
+- `Info.plist`によって管理されたCustom URL Schemeの様な挙動
+
+### Windows
+- Pluggable Protocol Handlers
+- Registryを使う
+  - アプリをインストールする際に、カスタムスキームの対応表を作る
