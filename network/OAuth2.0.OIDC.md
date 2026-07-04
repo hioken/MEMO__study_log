@@ -324,12 +324,12 @@ Pragma: no-cache
 * `registration_endpoint`: `redirect_uris`パラメータを送り、クライアントをidPに動的に登録 推奨
 * `end_session_endpoint`: `id_token_hint`パラメータで対象のtokenを送り、対象EUserをログアウトさせる
 * `check_session_iframe`: バックグラウンドで、idP側のログインセッションの継続を監視するURL
-##### トークン管理
+#### トークン管理
 * `revocation_endpoint`: 発行済みのアクセス/リフレッシュトークンを強制的に無効化
 * `introspection_endpoint`: 受け取ったAccessTokenの情報(有効, 権限)
 * `device_authorization_endpoint`: テレビ等、ブラウザ(GUI)を持たないデバイスでの認可用
 * `pushed_authorization_request_endpoint`: 認可リクエストのパラメータを事前にバックエンド通信でidPに送信し、安全に認可を開始する
-##### ドキュメント
+#### ドキュメント
 * `service_documentation`: 開発者向けガイド
 * `op_policy_uri`: クライアントに求めるプライバシーポリシーetc
 * `op_tos_uri`: 利用規約
