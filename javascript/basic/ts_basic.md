@@ -143,6 +143,12 @@ type UnionAccess = User["id" | "profile"]; // number | { age: number; bio: strin
 #### type代入
 - 左辺を宣言
 
+# class型の詳細指定
+## プロパティ/メソッド修飾子
+- `private`, `protected`, `public`
+- `abstract`: 継承先のクラスで必ず定義しなければならない
+
+
 # シグネチャ定義
 ## 概要
 - 関数やオブジェクトのインデックスetcの、引数と戻り値の型を定義
