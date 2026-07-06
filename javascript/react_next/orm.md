@@ -1,9 +1,12 @@
 # Prisma
 ## 主要コンポーネント
 ### Prisma Schema
-* SSOT
+* db構造とdbの種類を記述(Prisma7~)
+  * SSOT(Prisma~6)
 * データベースの接続情報
 * アプリケーションのデータ構造
+### config
+* 接続用設定
 ### Prisma Client
 * schemaから自動生成される
 * 型安全なDB操作ライブラリ
@@ -13,9 +16,9 @@
 * `schema.prisma`のテーブル操作
 
 
-## コンポーネント詳細
-### Prisma Schema
-* `schema.prisma`
+## Prisma Schema
+### 概要
+* `prisma/schema.prisma`
 * 3つのブロックで構成される
 
 ### Datasource
@@ -23,7 +26,7 @@
 ```prisma
 datasource db {
   provider = "postgresql"
-  url = env("POSTGREW_URL")
+  // Prisma~6 url = env("POSTGREW_URL")
 }
 ```
 
@@ -78,6 +81,27 @@ model Invoice {
 | `?` | 修飾子 | NULL許容（オプショナル） |
 | `[]` | 修飾子 | 配列（主に1対多の「多」側） |
 
+## config
+* `/schema.config.ts`
+* `@prisma/config`からimportした`defineConfig`関数をラップしてexportする
+```ts
+  import { defineConfig } from '@prisma/config'
+
+  export default defineConfig({
+    // 設定プロパティ
+  })
+```
+
+| プロパティ | 型 | 説明 |
+| :--- | :--- | :--- |
+| `migrate` | Object | マイグレーション設定。 |
+| `migrate.url` | string | DB直接接続URL。必須。 |
+| `studio` | Object | Prisma Studio起動設定。 |
+| `studio.port` | number | ポート番号（初期値5555）。 |
+| `studio.browser` | string | 起動時に開くブラウザ。 |
+| `schema` | string | schema.prismaの独自パス指定。 |
+| `earlyAccess` | boolean | プレビュー機能の有効化。 |
+| `telemetry` | boolean | テレメトリ（利用状況）送信設定。 |
 
 ## 操作
 ### query methods一覧
