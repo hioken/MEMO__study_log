@@ -325,6 +325,7 @@ deleteUser("user_999"); // 💥【コンパイルエラー！】ただの string
 | `is` | `function check(x): x is string` | （ユーザー定義型ガード）戻り値が `true` の場合、呼び出し元のスコープで変数の型を確定させる。 |
 | `asserts` | `function assert(x): asserts x is string` | （アサーション関数）この関数を例外なく通過した時点で、それ以降のパスにおける変数の型を確定させる。 |
 | `as` | `val as string` | （型アサーション）CFGの解析を無視し、「これは `string` だ」とコンパイラを強制的に黙らせる。※絞り込みではなく上書き。 |
+| `as const` | `val as string` | `readonly`を付け、推論をリテラルまで強める |
 | `!` | `val!` | （Non-null アサーション）CFGの解析を無視し、「`null` や `undefined` ではない」とコンパイラを強制的に黙らせる。※絞り込みではなく型の強制的な除外。 |
 
 ## 暗黙の確定
