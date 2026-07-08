@@ -11,6 +11,8 @@
 * schemaから自動生成される
 * 型安全なDB操作ライブラリ
 * 提供されるメソッドでクエリを発行
+* PrismaClientインスタンスごとにTCPソケットが開設されるが、このインスタンスが消えてもソケットは自動で閉じてはくれない
+  * そのためglobalThisによるシングルトンパターンの定義が必須
 ### Prisma Migrate
 * schemaの変更内容を、DBに反映させるためのツール
 * `schema.prisma`のテーブル操作
@@ -104,6 +106,15 @@ model Invoice {
 | `telemetry` | boolean | テレメトリ（利用状況）送信設定。 |
 
 ## 操作
+### クライアントインスタンス化
+```ts
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient({
+  adapter: DBのアダプター
+});
+// const prisma = new PrismaClient(); Prisma~6
+```
+
 ### query methods一覧
 | clause | method | argObj | 説明 |
 | :--- | :--- | :--- | :--- |
@@ -117,12 +128,15 @@ model Invoice {
 | `INSERT / UPDATE` | `upsert` | `{ where, create, update, ... }` | 存在すれば更新、なければ作成。必須: `where`, `create`, `update` |
 | `DELETE (1件)` | `delete` | `{ where, select?, include? }` | 1件削除。必須: `where` |
 | `DELETE (複数)` | `deleteMany` | `{ where? }` | 複数削除 |
+| `SELECT COUNT` | `count` | `{ where?, select?, ... }` | 条件に合うレコードの件数を取得 |
+| `SELECT (集計)` | `aggregate` | `{ where?, _sum, _avg, ... }` | 合計・平均などの集計を実行。集計プロパティが必須 |
+| `GROUP BY` | `groupBy` | `{ by, where?, _sum, ... }` | 指定カラムでグループ化して集計。必須: `by` |
 
 ### query props一覧
 | keyword | prop | value | 説明 |
 | :--- | :--- | :--- | :--- |
 | `WHERE` | `where` | Object | 絞り込み条件（対象の特定）を指定 |
-| `SET` / `VALUES` | `data` | Object / Array | 作成・更新する具体的な値を指定 |
+| `SET` / `VALUES`| `data` | Object / Array | 作成・更新する具体的な値を指定 |
 | `SELECT` | `select` | Object | 取得するカラムをbooleanで指定 |
 | `JOIN` | `include` | Object | リレーション先のテーブルも結合して取得 |
 | `ORDER BY` | `orderBy` | Object / Array | ソート順（`asc` または `desc`）を指定 |
@@ -131,24 +145,17 @@ model Invoice {
 | `DISTINCT` | `distinct` | Array | 指定したカラムの重複を排除して取得 |
 | (upsert専用) | `create` | Object | `upsert` 時にレコードが存在しない場合の値 |
 | (upsert専用) | `update` | Object | `upsert` 時にレコードが存在する場合の値 |
-
-
-### クライアントインスタンス化
-```ts
-import { PrismaClient } from '@prisma/client';
-const prisma = new PrismaClient();
-```
+| `GROUP BY` | `by` | Array | `groupBy` メソッド専用。グループ化するカラムを指定 |
+| `HAVING` | `having` | Object | `groupBy` メソッド専用。グループ化後の結果に対する絞り込み |
+| `SUM()` | `_sum` | Object | `aggregate` / `groupBy` 用。指定カラムの合計値を計算 |
+| `AVG()` | `_avg` | Object | `aggregate` / `groupBy` 用。指定カラムの平均値を計算 |
+| `MIN()` | `_min` | Object | `aggregate` / `groupBy` 用。指定カラムの最小値を取得 |
+| `MAX()` | `_max` | Object | `aggregate` / `groupBy` 用。指定カラムの最大値を取得 |
+| `COUNT()` | `_count` | Object / boolean | `aggregate` / `groupBy` 用。件数を計算 |
 
 ### crud例
-
-```ts
-const user = await prisma.user.findUnique({
-  where: { id: 'user-123' },
-});
-```
 ```ts
 import { PrismaClient } from '@prisma/client';
-
 const prisma = new PrismaClient();
 
 // 【findUnique】一意条件での取得
@@ -196,7 +203,14 @@ const updatedCustomer = await prisma.customer.update({
 
 // 【delete】削除
 // DELETE FROM "Invoice" WHERE "id" = 'invoice-456' RETURNING "id", "amount", "customerId";
-const deletedInvoice = await prisma.invoice.delete({
+const deletedInvoice = await prisma.invoice.delete({:w
   where: { id: 'invoice-456' },
 });
 ```
+
+## migrate
+* `npx prisma migrate [dev or deploy]`
+* `schema.prisma`と現在のDBの差分を計算、テーブルを作成, 変更するためのSQLファイルが`prisma/migrations`に生成される
+* 生成したmigrationsの実行
+* 新しいテーブル構造に合わせたClientの再生成(devのみ)
+* `npx prisma migrate reset`: テーブルを削除し、migrationを当てなおす
