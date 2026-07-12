@@ -79,7 +79,20 @@ export default Button;
   - オブジェクトリテラル内のスプレッド構文による展開が行える
 - `children`: 型定義ルールに則って、子要素全てが入っているプロパティ
 ```tsx
-<Child count={10} flg />
+<Child count={10} flg /> // propsオブジェクトにcount: 10を追加
+
+// children
+//// baseコンポーネント
+<Parent>
+  <p>この要素がchildrenとして渡る</p>
+</Parent>
+
+//// Parentコンポーネント
+export default function Parent(props) {
+  <div>
+    { props.children } // これを記述しないと、<p>タグが無視される
+  </div>
+}
 ```
 
 ```ts
@@ -104,6 +117,35 @@ type ReactNode =
 ### module.css
 - コンポーネントにimportする
 - `import変数.class定義`を、要素のclassNameの値に指定する
+
+## RSCのRCCラッパー
+- RCCの中にRSC前提のコンポーネントをそのまま記述してしまうと、RSC部分もRCC扱いになってしまう
+- これを回避するため、RCCの子要素であるRSC部分は、親となるRCCを呼び出しているスコープに記述し、RCCではchildrenとして受け取る
+### 例
+###### `layout.tsx`
+```tsx
+import { ClientWrapper } from "./ClientWrapper";
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  // layout.tsx自体はサーバーコンポーネントのまま維持します
+  return (
+    <html lang="ja">
+      <body>
+        <ClientWrapper>{children}</ClientWrapper>
+      </body>
+    </html>
+  );
+}
+```
+###### `ClientWrapper.tsx`
+```tsx
+"use client";
+
+export const ClientWrapper = ({ children }: { children: React.ReactNode }) => {
+  // Context Providerなどをここに記述します
+  return <div>{children}</div>; 
+};
+```
 
 # Hooks
 ## state

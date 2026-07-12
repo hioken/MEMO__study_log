@@ -40,22 +40,22 @@
 ## IDToken必須要素
 * 一部クレームは、同一EUserのIDToken, AccessToken, UserInfoClaimsにおいて値を共有している
 * `iss` (ISSuer)
-  * 役割: IDトークンの発行者を表します。
+  * 役割: IDTokenの発行者を表します。
   * 詳細: URLの形式、通常はIDプロバイダのURL
     * `public`: 全てのクライアントに同一の値
     * `pairwise`: クライアントごとに異なる値
 * `aud` (AUDience)
-  * 役割: IDトークンの発行を受けるリライング・パーティ（RP）のクライアントIDが入ります。
+  * 役割: IDTokenの発行を受けるリライング・パーティ（RP）のクライアントIDが入ります。
   * 詳細: 文字列の配列、単一の場合は文字列でも可
 * `sub` (SUBject)
   * 役割: エンドユーザーの識別子
 * `iat` (Issued AT)
   * 役割: JWTの発行時間 UNIXタイム
 * `exp` (EXPiration time)
-  * 役割: IDトークンの有効期限 UNIXタイム
+  * 役割: IDTokenの有効期限 UNIXタイム
 * `nonce`
   * 役割: リプレイアタック防止のために用いられるランダムな文字列です。
-  * 詳細: クライアントからの認証リクエストに含まれる `nonce` と全く同じ値が、発行されるIDトークンに含められる
+  * 詳細: クライアントからの認証リクエストに含まれる `nonce` と全く同じ値が、発行されるIDTokenに含められる
 ## その他
 * `jti`(JwT Id)
 * `auth_time`(AUTHenticationTIME)
@@ -178,6 +178,13 @@ Content-Type: application/json
   "picture": "http://example.com/janedoe/me.jpg"
 }
 ```
+
+# アイデンティティ情報の所在
+## Fat ID Token
+* ID Tokenにアイデンティティ情報を含める
+* ID Token自体は基本JWS(非暗号化)のため注意
+## Thin ID Token + UserInfo
+* 従来のOAuth認可のように、認証後にクライアントがUserInfoEndpointから情報を取得する
 
 # フロー(OAuthグラントとの比較)
 ## トークンレスポンス例
