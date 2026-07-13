@@ -1,7 +1,11 @@
 # system
-## routing/file
-### file system routing`app/page1/page2`
-- `page.tsx`と、一部の他の`layout.tsx`などのファイルだけが公開される
+## App Router (page + Route Handler)
+### 概要
+* viewとapiのエンドポイントのURIが、ディレクトリ構造によって決定する仕組み
+* `route.ts`と`page.tsx`は同じディレクトリに存在できない(URIが被る)
+  * 通常はapiはapi/ディレクトリをapp配下に咬ませて分ける
+* App Router(view): `page.tsx`と、一部の他の`layout.tsx`などのファイルだけが公開される
+* Route Handler(api): `route.ts`だけが公開される
 #### pageコンポーネント
 - `page.tsx`へのパスがそのままurlになる
 - パラメータ関連のpropsが渡される
@@ -13,6 +17,7 @@
 #### layoutコンポーネント
 - `children`の定義が必須
 - 高い階層の`layout.tsx`の`children`に、一番近い階層の`layout.tsx`が入る、`layout.tsx`がなく、その階層に`page.tsx`があれば代入される
+### Route Handlers
 ### Route Groups`(groups)`
 - FSR(FileSystemRouting)内で`()`を使うとurlに影響を与えることなく、ファイルをグループ化できる
   - urlに影響を与えない = その上の階層の一部として扱われる
@@ -22,7 +27,13 @@
 - FSR内で`[]`を使うと、urlにpath parameterを受け取るセグメントを追加できる
 - RSC: pageコンポーネントの`props`の`params`プロパティとしてオブジェクトで受け取る
 - RCC: `useParams()`で受け取る(`戻り値.segment`)
+### Dynamic Catch-all Segments`[...segment]`
+* 深くネストされたurlを`Promise`としてパラメータとして受け取る
+  * `segment/a/b`: `params.segment` = `['a', 'b']`
+* `[[...segmentt]]`で指定した場合、Optionalとなり、パラメーター無しを許可(`undefined`)
 
+## file system routingとPages Router
+* file system routing: 旧システム(Pages Router, API Routes)と現行システム(App router)を総称した名称
 
 ## Link & Navigate
 ### viewport & prefetch
@@ -143,8 +154,6 @@ const actionRegistry = {
 - 動作: RCCに依存(`"use client"`)
 - 復帰: propsとして`reset()`が提供(補足したerror状態を破棄し、ラップした範囲の再レンダリングを行う)
 
-
-
 # DB
 ## ORM
 ### Prisma
@@ -159,6 +168,91 @@ const actionRegistry = {
 - `sql<T[]>()`:
   - (str): `Promise`で引数のクエリを実行、結果をオブジェクト化, 型をTにアサーションしたオブジェクトを戻り値として返す
   - (obj): オブジェクトをinsert/updateの内容として展開
+
+# proxy.ts
+## 概要
+* ver15以前は`middleware.ts`
+* CDNのエッジノート上で動作するEdge Runtimeで実行される
+  * Node.jsのネイティブモジュールetcは一切使えない
+* WebAPIsの一部をサポートしている、これによりNode.jsの機能をWebAPIsで代用できる
+  * `crypto`: `crypto.subtle`で代用できる 
+* `default export`を実行ハンドラとしてバインディングする
+* ルートor`src/`に配置する
+* 引数: `NextRequest`or`Request`, 戻り値: `NextResponse`or`Response`
+* `export const config = { ... }` の内部で規定の設定が可能
+
+
+## HTTP操作
+* HTTP操作は、Node.js標準の`http.IncomingMessage`ではなく、ブラウザのFetchAPIをベースに拡張したもの
+* `NextRequest`:
+  * Web標準の`Request`を継承
+  * `req.cookies`によるCookieパース機能
+  * `nextUrl`（`URL` クラスのラッパー）による現在のリクエストURLの評価・操作
+* `NextResponse`:
+  * Web標準の`Response`を継承
+  * `redirect`, `rewrite`
+  * `next`（処理を後続のNext.jsルーターへ引き渡し）
+
+## WebAPIs
+### 1. Node.js機能の代用として使われるWeb API
+| API | Node.js | 機能 |
+| :--- | :--- | :--- |
+| `crypto.subtle`, `crypto.getRandomValues` | `crypto` モジュール | ハッシュ生成 |
+| `fetch`, `Request`, `Response`, `Headers` | `http`, `https` モジュール | HTTPリクエストの発行、レスポンスの生成、ヘッダのミューテーション |
+| `URL`, `URLSearchParams` | `url`, `querystring` モジュール | URLのパース、クエリパラメータの抽出・エンコード・ミューテーション |
+| `TextEncoder`, `TextDecoder` | `Buffer` クラス | UTF-8文字列とバイナリ（`Uint8Array`）間のシリアライズ/デシリアライズ |
+| `ReadableStream`, `WritableStream` 等 | `stream` モジュール | ペイロードのチャンク分割、バックプレッシャー制御、ストリーミングI/O |
+| `btoa()`, `atob()` | `Buffer.from().toString('base64')` | ASCII文字列のBase64エンコードおよびデコード |
+
+### 2. その他のWeb標準API (Node.jsの代替が主目的ではないもの)
+| API | 機能 |
+| :--- | :--- |
+| `AbortController`, `AbortSignal` | 非同期操作に対するキャンセル・タイムアウト制御 |
+| `Blob`, `File` | バイナリデータのイミュータブルなカプセル化とMIMEタイプの保持 |
+| `FormData` | `multipart/form-data` ペイロードの構築およびキーバリューのパース |
+| `structuredClone()` | 循環参照を含むJavaScriptオブジェクトの同期的なディープコピー |
+| `setTimeout()`, `clearTimeout()` 等 | イベントループにおけるマクロタスクの遅延実行と破棄制御 |
+| `console` | 標準出力 (`stdout`) および標準エラー (`stderr`) への同期/非同期ロギング |
+| `Event`, `EventTarget` | Web標準準拠のイベントディスパッチとリスナーのインターフェース |
+
+## Next API
+### 1. NextRequest (リクエストの評価・抽出)
+| API / プロパティ | 戻り値 / 型 | 役割・仕様概要 |
+| :--- | :--- | :--- |
+| `nextUrl` | `NextURL` クラス | 標準の`URL`クラスを拡張 |
+| `nextUrl.clone()` | `NextURL` クラス | 現在のURLオブジェクトのディープコピーを生成 |
+| `cookies` | `RequestCookies` インスタンス | リクエストヘッダの `Cookie` 文字列をパースした読み取り専用API |
+| `cookies.get()` | `{ name: string, value: string } \| undefined` | 指定したキーのCookieオブジェクトを取得 |
+| `cookies.getAll()`| `Array<{ name, value }>` | リクエストに含まれるすべてのCookieを配列として取得 |
+| `cookies.has()` | `boolean` | 指定したキーのCookieが存在するか |
+| `ip` | `string \| undefined` | クライアントのIPアドレス(local: `undefined`) |
+| `geo` | `{ country?, city?, region?, latitude?, longitude? }` | CDNエッジから提供されるクライアントの地理情報。デプロイ環境に依存。 |
+
+### 2. NextResponse (レスポンスの生成・ミューテーション)
+* すべて `NextResponse` クラスの静的メソッド（ファクトリ）として呼び出す
+
+| 静的メソッド | 引数 | 戻り値 / 型 | 役割・仕様概要 |
+| :--- | :--- | :--- | :--- |
+| `NextResponse.next()` | `options?: { request?: { headers?: Headers } }` | `NextResponse` インスタンス | 処理を中断せず、後続のNext.jsへリクエストをそのまま引き継ぐ |
+| `NextResponse.redirect()` | `url: string \| URL \| NextURL`, `init?: number \| ResponseInit` | `NextResponse` インスタンス | 指定URLへの強制遷移レスポンスを生成(default: `307 (Temporary Redirect)`) |
+| `NextResponse.rewrite()` | `url: string \| URL \| NextURL`, `init?: ResponseInit` | `NextResponse` インスタンス | ブラウザのURLバーを維持したまま、指定した別パス（または外部URL）のコンテンツをプロキシして返却 |
+| `NextResponse.json()` | `body: any`, `init?: ResponseInit` | `NextResponse` インスタンス | `Content-Type: application/json`ヘッダを持つJSONペイロードレスポンスを早期リターン |
+
+### 3. NextResponse インスタンスにおけるミューテーション機能
+* `next()`, `redirect()`, `rewrite()` 等で生成されたインスタンスに対して、後続またはクライアントへ返す状態を操作
+
+| API / プロパティ | 引数 / 戻り値 | 役割・仕様概要 |
+| :--- | :--- | :--- |
+| `cookies.set()` | 引数: `name`, `value`, `options?` | `Set-Cookie`ヘッダをレスポンスに注入、クライアントにCookieの保存/上書きを指示 |
+| `cookies.delete()`| 引数: `name` | `Max-Age=0` の `Set-Cookie` を注入し、クライアントの該当Cookieを即座に破棄させる。 |
+| `headers.set()` | 引数: `name`, `value` | HTTPヘッダを上書きまたは新規追加する。`NextResponse.next()` への適用時は、後続サーバーで参照可能 |
+
+## config
+| プロパティキー | 許容される値の型 | 役割・仕様概要 |
+| :--- | :--- | :--- |
+| `matcher` | `string \| Array<string \| MatcherObject>` | `proxy.ts` を起動するURLパスを定義、文字列（パス表記/正規表現）の配列 or 特定のヘッダ/クエリの有無を条件に含むオブジェクトを指定 |
+| `regions` | `string \| Array<string>` | エッジ関数のデプロイ先リージョンを制限、Vercel等の対応CDNでのみ有効。指定しない場合はユーザーに最も近いエッジで実行 |
+| `unstable_allowDynamic` | `Array<string>` | Edge Runtimeで禁止されている動的コード評価を例外的に許可する、依存パッケージがエッジでクラッシュする際の回避策 |
 
 # BuildInComponents
 ## next/Link
@@ -227,3 +321,6 @@ const actionRegistry = {
 - reactの機能が拡張されている
 - コードのエラーではなくルールが統一されているかチェックできる
 - 設定次第で自動修正や、vscodeやCI/CDとの連携などの拡張機能を使える
+
+# 未学習
+* use cache
