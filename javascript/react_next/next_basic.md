@@ -157,6 +157,7 @@ const actionRegistry = {
 # DB
 ## ORM
 ### Prisma
+* 別ファイル
 ### Drizzle ORM
 ## Type Query Builder
 ### Kysely(kanel)
@@ -180,7 +181,6 @@ const actionRegistry = {
 * ルートor`src/`に配置する
 * 引数: `NextRequest`or`Request`, 戻り値: `NextResponse`or`Response`
 * `export const config = { ... }` の内部で規定の設定が可能
-
 
 ## HTTP操作
 * HTTP操作は、Node.js標準の`http.IncomingMessage`ではなく、ブラウザのFetchAPIをベースに拡張したもの
@@ -315,12 +315,54 @@ const actionRegistry = {
 | `back` | なし | - | ブラウザの履歴を1つ戻る |
 | `forward` | なし | - | ブラウザの履歴を1つ進む |
 
-# setting
+# setting / meta etc
 ## lint
 - `/eslint.confg.mjs`
 - reactの機能が拡張されている
 - コードのエラーではなくルールが統一されているかチェックできる
 - 設定次第で自動修正や、vscodeやCI/CDとの連携などの拡張機能を使える
+
+## meta
+### 概要
+* Config-based: コード内でオブジェクトをexport
+* File-based: 特定の名前のファイルを配置する
+* 全てRSCで解決
+### Config-based
+* `layout.tsx`, `page.tsx`ファイルから、メタデータオブジェクトor生成関数をexport
+* 静的メタデータ: `metadata`定数をexport
+* 動的メタデータ: `generateMetadata`関数を用いて生成したオブジェクトをexport
+```ts
+// 静的メタデータ(app/layout.tsx or app/page.tsx)
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Next.js 16 アプリ',
+  description: 'Next.js 16のメタデータのテスト',
+};
+
+// 動的メタデータ(例: app/blog/[id]/page.tsx)
+import type { Metadata } from 'next';
+
+export async function generateMetadata({ params }): Promise<Metadata> {
+  const post = await fetchPost(params.id);
+  return {
+    title: post.title,
+    description: post.summary,
+  };
+})
+```
+### File-based
+| ファイル規約 | サポートされる拡張子 (静的) | 動的生成の拡張子 | 役割と対象スコープ |
+| :--- | :--- | :--- | :--- |
+| `favicon` | `.ico` | - | ルートのみ配置可。サイト全体のファビコン。 |
+| `icon` | `.ico`, `.jpg`, `.jpeg`, `.png`, `.svg` | `.js`, `.ts`, `.tsx` | 各セグメントに配置可。アプリアイコン。複数サイズ設定可能。 |
+| `apple-icon` | `.jpg`, `.jpeg`, `.png`, `.svg` | `.js`, `.ts`, `.tsx` | 各セグメントに配置可。iOSデバイス用のホーム画面アイコン。 |
+| `opengraph-image` | `.jpg`, `.jpeg`, `.png`, `.gif` | `.js`, `.ts`, `.tsx` | 各セグメントに配置可。SNSシェア時のOGP画像 (`og:image`)。 |
+| `twitter-image` | `.jpg`, `.jpeg`, `.png`, `.gif` | `.js`, `.ts`, `.tsx` | 各セグメントに配置可。X (Twitter) カード用画像。 |
+| `robots.txt` | `.txt` | `.js`, `.ts` | ルートのみ配置可。クローラーのアクセス制御。 |
+| `sitemap` | `.xml` | `.js`, `.ts` | ルートのみ配置可。検索エンジン用サイトマップ。 |
+| `manifest` | `.json`, `.webmanifest` | `.js`, `.ts` | ルートのみ配置可。PWA（プログレッシブウェブアプリ）設定。 |
+
 
 # 未学習
 * use cache
